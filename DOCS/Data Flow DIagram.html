@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BITS-CMS — Data Flow Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0b0d12;
+    --surface: #12151d;
+    --surface2: #181c27;
+    --border: #1e2333;
+    --accent: #00d97e;
+    --accent2: #4c8dff;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --accent5: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #6b7a99;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0e1120 0%, var(--bg) 100%);
+  }
+  .header-top { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .logo { font-family: var(--sans); font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; }
+  .logo span { color: var(--accent); }
+  .badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: rgba(0,217,126,.08); border: 1px solid rgba(0,217,126,.2);
+    color: var(--accent); border-radius: 999px; padding: .25rem .75rem;
+    font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    font-family: var(--mono);
+  }
+  header h1 {
+    margin-top: .75rem; font-size: 1.8rem; font-weight: 800;
+    background: linear-gradient(135deg,#fff 30%,var(--muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header p { margin-top: .35rem; color: var(--muted); font-size: .85rem; max-width: 680px; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 0; overflow-x: auto; border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem; background: var(--surface);
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: .85rem 1.4rem; font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent;
+    color: var(--muted); transition: all .2s; white-space: nowrap; user-select: none;
+    font-family: var(--mono); background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 2rem 2.5rem; }
+  .panel.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); font-family: var(--mono); margin-bottom: 1.25rem;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .section-title::before {
+    content:''; width: 8px; height: 8px; border-radius: 2px;
+    background: var(--accent); display: block;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .card-head {
+    padding: .75rem 1.2rem; border-bottom: 1px solid var(--border);
+    font-size: .75rem; font-weight: 700; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .06em;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .card-body { padding: 1.2rem; }
+
+  /* ── LEVEL-0 DFD ── */
+  .ctx-diagram {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    padding: 2rem 0;
+  }
+  .ctx-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 1.5rem; width: 100%; flex-wrap: wrap;
+  }
+  .ctx-entity {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.1rem 1.5rem; text-align: center;
+    min-width: 140px; max-width: 170px;
+  }
+  .ctx-entity .ent-icon { font-size: 1.6rem; }
+  .ctx-entity .ent-name {
+    font-size: .8rem; font-weight: 700; margin-top: .3rem;
+    font-family: var(--mono); color: var(--text);
+  }
+  .ctx-entity .ent-role { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
+
+  .ctx-arrows {
+    display: flex; flex-direction: column; align-items: center;
+    gap: .35rem; padding: .6rem 0; width: 100%;
+  }
+  .arrow-pair {
+    display: flex; align-items: center; justify-content: center;
+    gap: .8rem; width: 100%; max-width: 700px;
+  }
+  .arrow-line {
+    flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
+    position: relative;
+  }
+  .arrow-label {
+    font-size: .65rem; font-family: var(--mono); color: var(--muted);
+    background: var(--bg); padding: 0 .4rem; border: 1px solid var(--border);
+    border-radius: 4px; white-space: nowrap; text-align: center;
+    min-width: 180px;
+  }
+  .arrow-dir { color: var(--accent); font-size: .75rem; font-weight: 700; }
+
+  .ctx-process {
+    background: linear-gradient(135deg, #1a2240, #12192e);
+    border: 2px solid var(--accent2); border-radius: 50%;
+    width: 180px; height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 1rem;
+  }
+  .ctx-process .proc-label {
+    font-size: .95rem; font-weight: 800; color: var(--accent2); line-height: 1.2;
+  }
+  .ctx-process .proc-sub { font-size: .65rem; color: var(--muted); margin-top: .3rem; font-family: var(--mono); }
+
+  /* ── LEVEL-1 FLOW ── */
+  .flow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+  }
+  .flow-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .flow-head {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .8rem 1.1rem; border-bottom: 1px solid var(--border);
+  }
+  .flow-icon { font-size: 1.1rem; }
+  .flow-title { font-size: .8rem; font-weight: 700; font-family: var(--mono); }
+  .flow-tag {
+    margin-left: auto; font-size: .6rem; padding: .2rem .55rem;
+    border-radius: 4px; font-family: var(--mono); font-weight: 700; text-transform: uppercase;
+  }
+  .tag-auth { background: rgba(255,107,107,.12); color: var(--accent3); border: 1px solid rgba(255,107,107,.25); }
+  .tag-public { background: rgba(0,217,126,.1); color: var(--accent); border: 1px solid rgba(0,217,126,.2); }
+  .tag-admin { background: rgba(76,141,255,.1); color: var(--accent2); border: 1px solid rgba(76,141,255,.2); }
+  .tag-media { background: rgba(167,139,250,.1); color: var(--accent5); border: 1px solid rgba(167,139,250,.2); }
+  .tag-super { background: rgba(255,209,102,.1); color: var(--accent4); border: 1px solid rgba(255,209,102,.2); }
+
+  .step-list { padding: .5rem 0; }
+  .step {
+    display: flex; gap: .75rem; padding: .55rem 1.1rem;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+    align-items: flex-start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    min-width: 1.25rem; height: 1.25rem; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .62rem; font-weight: 700; font-family: var(--mono);
+    background: rgba(255,255,255,.05); color: var(--muted); margin-top: .05rem;
+    flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .step-action { font-size: .78rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .step-detail { font-size: .68rem; color: var(--muted); margin-top: .15rem; line-height: 1.4; font-family: var(--mono); }
+  .step-arrow {
+    display: flex; align-items: center; gap: .4rem; padding: .3rem 1.1rem;
+    font-size: .65rem; color: var(--muted); font-family: var(--mono);
+    background: rgba(255,255,255,.02);
+  }
+  .step-arrow .sa-dir { color: var(--accent); font-weight: 700; }
+
+  /* ── DB SCHEMA ── */
+  .schema-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
+  }
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .table-head {
+    padding: .7rem 1rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .table-icon { font-size: 1rem; }
+  .table-name { font-size: .8rem; font-weight: 700; font-family: var(--mono); }
+  .table-count { margin-left: auto; font-size: .65rem; color: var(--muted); font-family: var(--mono); }
+  .col-list { padding: .4rem 0; }
+  .col-row {
+    display: flex; align-items: center; gap: .6rem; padding: .38rem 1rem;
+    font-size: .72rem; font-family: var(--mono); border-bottom: 1px solid rgba(255,255,255,.03);
+  }
+  .col-row:last-child { border-bottom: none; }
+  .col-pk { color: var(--accent4); font-size: .6rem; background: rgba(255,209,102,.1); padding: .1rem .35rem; border-radius: 3px; font-weight: 700; }
+  .col-fk { color: var(--accent2); font-size: .6rem; background: rgba(76,141,255,.1); padding: .1rem .35rem; border-radius: 3px; font-weight: 700; }
+  .col-name { color: var(--text); flex: 1; }
+  .col-type { color: var(--muted); font-size: .65rem; }
+  .col-nn { color: var(--accent3); font-size: .6rem; background: rgba(255,107,107,.08); padding: .1rem .3rem; border-radius: 3px; }
+  .col-idx { color: var(--accent); font-size: .6rem; }
+  .rel-list { padding: .4rem 1rem .8rem; border-top: 1px solid var(--border); }
+  .rel-item { font-size: .65rem; color: var(--muted); font-family: var(--mono); padding: .18rem 0; display: flex; align-items: center; gap: .4rem; }
+  .rel-arrow { color: var(--accent2); }
+
+  /* ── ARCH OVERVIEW ── */
+  .arch-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;
+  }
+  @media(max-width:860px) { .arch-grid { grid-template-columns: 1fr; } }
+
+  .layer-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .layer-head {
+    padding: .7rem 1.1rem; border-bottom: 1px solid var(--border);
+    font-size: .72rem; font-weight: 700; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .07em;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .lh-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-green { background: var(--accent); }
+  .dot-blue  { background: var(--accent2); }
+  .dot-gold  { background: var(--accent4); }
+  .dot-purple{ background: var(--accent5); }
+  .dot-red   { background: var(--accent3); }
+
+  .module-list { padding: .5rem 0; }
+  .module-item {
+    display: flex; gap: .7rem; align-items: flex-start;
+    padding: .5rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,.03);
+  }
+  .module-item:last-child { border-bottom: none; }
+  .mod-bullet {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--muted);
+    margin-top: .55rem; flex-shrink: 0;
+  }
+  .mod-text { font-size: .76rem; color: var(--text); line-height: 1.4; }
+  .mod-sub { font-size: .65rem; color: var(--muted); font-family: var(--mono); margin-top: .15rem; }
+
+  /* ── API REFERENCE ── */
+  .api-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .72rem; }
+  .api-table th {
+    text-align: left; padding: .55rem .85rem;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-size: .65rem; text-transform: uppercase; letter-spacing: .07em;
+    background: rgba(255,255,255,.02);
+  }
+  .api-table td { padding: .52rem .85rem; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+  .api-table tr:hover td { background: rgba(255,255,255,.02); }
+  .method {
+    display: inline-block; padding: .2rem .45rem; border-radius: 4px;
+    font-weight: 700; font-size: .65rem; text-transform: uppercase;
+  }
+  .m-get { background: rgba(0,217,126,.12); color: var(--accent); }
+  .m-post { background: rgba(76,141,255,.12); color: var(--accent2); }
+  .m-put { background: rgba(255,209,102,.12); color: var(--accent4); }
+  .m-patch { background: rgba(167,139,250,.12); color: var(--accent5); }
+  .m-delete { background: rgba(255,107,107,.12); color: var(--accent3); }
+  .path { color: var(--text); }
+  .auth-req { color: var(--accent4); font-size: .62rem; }
+  .desc-cell { color: var(--muted); max-width: 300px; line-height: 1.4; }
+  .role-badge {
+    display: inline-block; padding: .15rem .4rem; border-radius: 3px;
+    font-size: .6rem; font-weight: 700; text-transform: uppercase;
+  }
+  .role-any { background: rgba(0,217,126,.1); color: var(--accent); }
+  .role-admin { background: rgba(76,141,255,.1); color: var(--accent2); }
+  .role-super { background: rgba(255,209,102,.1); color: var(--accent4); }
+  .role-pub { background: rgba(255,255,255,.05); color: var(--muted); }
+
+  /* ── TOKEN FLOW DIAGRAM ── */
+  .token-flow {
+    display: flex; flex-direction: column; gap: 0;
+    max-width: 760px; margin: 0 auto;
+  }
+  .tf-step {
+    display: flex; gap: 1rem; position: relative;
+  }
+  .tf-line-wrap {
+    display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;
+  }
+  .tf-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; font-weight: 700; font-family: var(--mono); flex-shrink: 0;
+    border: 2px solid transparent;
+  }
+  .tfd-client { background: rgba(0,217,126,.1); border-color: var(--accent); color: var(--accent); }
+  .tfd-server { background: rgba(76,141,255,.1); border-color: var(--accent2); color: var(--accent2); }
+  .tfd-db     { background: rgba(255,209,102,.1); border-color: var(--accent4); color: var(--accent4); }
+  .tf-connector {
+    flex: 1; width: 2px; background: var(--border); margin: 2px 0;
+    min-height: 24px;
+  }
+  .tf-content { flex: 1; padding: 0 0 1.5rem 0; }
+  .tf-title { font-size: .82rem; font-weight: 700; color: var(--text); }
+  .tf-body { font-size: .7rem; color: var(--muted); margin-top: .3rem; line-height: 1.5; font-family: var(--mono); }
+  .tf-payload {
+    margin-top: .5rem; background: rgba(255,255,255,.03); border: 1px solid var(--border);
+    border-radius: 6px; padding: .6rem .8rem; font-size: .65rem; font-family: var(--mono);
+    color: var(--muted); line-height: 1.6;
+  }
+  .tf-payload .k { color: var(--accent2); }
+  .tf-payload .v { color: var(--accent); }
+  .tf-payload .s { color: var(--accent4); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">Bi<span>T</span>S <span style="color:var(--muted)">CMS</span></div>
+    <span class="badge">PERN Stack</span>
+    <span class="badge" style="background:rgba(76,141,255,.08);border-color:rgba(76,141,255,.2);color:var(--accent2)">Node + Express + PostgreSQL + React</span>
+  </div>
+  <h1>Data Flow Diagram — Full System Analysis</h1>
+  <p>Complete architectural breakdown covering every route, middleware layer, DB query, and component data flow — sourced from exhaustive source-code analysis.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('ctx')">Level 0 Context</button>
+</div>
+
+<!-- ══════════════════════════ LEVEL 0 ══════════════════════════ -->
+<div class="panel active" id="panel-ctx">
+  <div class="section-title">Level 0 — System Context Diagram</div>
+
+  <div class="ctx-diagram">
+    <!-- Top external entities -->
+    <div class="ctx-row">
+      <div class="ctx-entity">
+        <div class="ent-icon">👤</div>
+        <div class="ent-name">Public Visitor</div>
+        <div class="ent-role">Reads news/events (unauthenticated)</div>
+      </div>
+      <div style="width:160px"></div>
+      <div class="ctx-entity">
+        <div class="ent-icon">🔐</div>
+        <div class="ent-name">Admin</div>
+        <div class="ent-role">Manages posts, uploads media, self-service password</div>
+      </div>
+      <div style="width:160px"></div>
+      <div class="ctx-entity">
+        <div class="ent-icon">👑</div>
+        <div class="ent-name">Superadmin</div>
+        <div class="ent-role">Creates/deactivates admins, resets passwords</div>
+      </div>
+    </div>
+
+    <!-- Top arrows down -->
+    <div class="ctx-arrows">
+      <div class="arrow-pair">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+          <div class="arrow-label">GET /api/posts, GET /api/media/:id</div>
+          <div class="arrow-dir">↓  ↑</div>
+          <div class="arrow-label">post list / post detail / media bytes</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+          <div class="arrow-label">POST /api/auth/login + cookie</div>
+          <div class="arrow-dir">↓  ↑</div>
+          <div class="arrow-label">accessToken + user info</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+          <div class="arrow-label">POST /api/admin/admins</div>
+          <div class="arrow-dir">↓  ↑</div>
+          <div class="arrow-label">admin record</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Central process -->
+    <div class="ctx-process">
+      <div class="proc-label">BITS-CMS<br/>API Server</div>
+      <div class="proc-sub">Node.js / Express<br/>PORT 3000</div>
+    </div>
+
+    <!-- Bottom arrows down -->
+    <div class="ctx-arrows">
+      <div class="arrow-pair">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+          <div class="arrow-dir">↓</div>
+          <div class="arrow-label">SQL: SELECT / INSERT / UPDATE / DELETE</div>
+          <div class="arrow-dir">↑</div>
+          <div class="arrow-label">rows: admin, post, media, readmore, tokens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom data stores -->
+    <div class="ctx-row">
+      <div class="ctx-entity" style="border-color:rgba(255,209,102,.25)">
+        <div class="ent-icon">🗄️</div>
+        <div class="ent-name" style="color:var(--accent4)">PostgreSQL</div>
+        <div class="ent-role">admin, post, media, readmore, readmore_media, refresh_token</div>
+      </div>
+      <div class="ctx-entity" style="border-color:rgba(167,139,250,.25)">
+        <div class="ent-icon">📦</div>
+        <div class="ent-name" style="color:var(--accent5)">BYTEA Storage</div>
+        <div class="ent-role">Binary media files stored as BYTEA in media table (≤10MB)</div>
+      </div>
+      <div class="ctx-entity" style="border-color:rgba(0,217,126,.25)">
+        <div class="ent-icon">🍪</div>
+        <div class="ent-name" style="color:var(--accent)">HTTP Cookies</div>
+        <div class="ent-role">httpOnly refreshToken cookie, path=/api/auth</div>
+      </div>
+      <div class="ctx-entity" style="border-color:rgba(76,141,255,.25)">
+        <div class="ent-icon">⚡</div>
+        <div class="ent-name" style="color:var(--accent2)">React Client</div>
+        <div class="ent-role">Vite/React SPA — accessToken held in memory (never localStorage)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div style="margin-top:2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.8rem">
+    <div class="card">
+      <div class="card-head" style="color:var(--accent)">🔐 Security Design</div>
+      <div class="card-body" style="font-size:.75rem;color:var(--muted);line-height:1.7;font-family:var(--mono)">
+        • Access token: HS256 JWT, 15-min TTL, memory only<br/>
+        • Refresh token: HS256 JWT, 7-day TTL, httpOnly cookie<br/>
+        • Refresh tokens hashed (SHA-256) before DB storage<br/>
+        • Token rotation on every /refresh call<br/>
+        • bcrypt (12 rounds) for all passwords<br/>
+        • Rate limiter: 20 req/60s on /api/auth (in-memory buckets)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--accent2)">📡 CORS Policy</div>
+      <div class="card-body" style="font-size:.75rem;color:var(--muted);line-height:1.7;font-family:var(--mono)">
+        • Custom CORS middleware (not cors package)<br/>
+        • Respects CORS_ORIGIN env variable<br/>
+        • If CORS_ORIGIN=*, echoes request Origin<br/>
+        • Credentials: true always set<br/>
+        • Preflight OPTIONS → 204 No Content<br/>
+        • Vary: Origin header added for CDN safety
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--accent4)">🧩 Role System</div>
+      <div class="card-body" style="font-size:.75rem;color:var(--muted);line-height:1.7;font-family:var(--mono)">
+        • Two roles: admin / superadmin<br/>
+        • Seeded superadmin via adminseed.ts script<br/>
+        • New UI-created accounts always role=admin<br/>
+        • requireRole('superadmin') guards: POST /admins,<br/>
+        &nbsp;&nbsp;GET /admins, PATCH /admins/:id/*, PATCH /:id/deactivate<br/>
+        • authenticate guards all admin routes
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--accent5)">🗃️ Media Architecture</div>
+      <div class="card-body" style="font-size:.75rem;color:var(--muted);line-height:1.7;font-family:var(--mono)">
+        • Media stored as BYTEA in PostgreSQL (no filesystem)<br/>
+        • Allowed: JPEG, PNG, GIF, WebP, MP4, PDF<br/>
+        • Max upload size: 10 MB (Multer + errorHandler)<br/>
+        • Served with Cache-Control: public, max-age=86400<br/>
+        • HTTP 206 Partial Content with Range header support<br/>
+        • YouTube: embed URL stored as mediaUrl (no file)
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
