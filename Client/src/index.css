@@ -1,0 +1,195 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: "Poppins", system-ui, -apple-system, sans-serif;
+  background-color: theme("colors.brand.bg");
+  color: theme("colors.brand.charcoal");
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shared prose styles — used by RichTextEditor and the public renderer */
+.bits-prose {
+  font-family: "Poppins", system-ui, sans-serif;
+  color: theme("colors.brand.charcoal");
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.bits-prose > * + * {
+  margin-top: 1em;
+}
+.bits-prose h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 1.6em;
+  margin-bottom: 0.5em;
+  color: theme("colors.brand.charcoal");
+}
+.bits-prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+  color: theme("colors.brand.charcoal");
+}
+.bits-prose ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.bits-prose ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.bits-prose li {
+  margin-bottom: 0.25em;
+}
+.bits-prose li > p {
+  margin: 0;
+}
+.bits-prose blockquote {
+  border-left: 4px solid theme("colors.brand.green");
+  background-color: theme("colors.brand.green-blob" / 35%);
+  padding: 0.85em 1.1em;
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: theme("colors.brand.charcoal");
+  margin-left: 0;
+  margin-right: 0;
+}
+.bits-prose blockquote > p {
+  margin: 0;
+}
+.bits-prose blockquote > p + p {
+  margin-top: 0.5em;
+}
+.bits-prose small {
+  font-size: 0.85em;
+  color: theme("colors.brand.muted");
+}
+.bits-prose mark {
+  background-color: theme("colors.brand.green-blob");
+  color: theme("colors.brand.charcoal");
+  padding: 0.05em 0.25em;
+  border-radius: 0.25rem;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.bits-prose a {
+  color: theme("colors.brand.green-dark");
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.bits-prose a:hover {
+  color: theme("colors.brand.green");
+}
+.bits-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5em 0;
+}
+.bits-prose hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 2em 0;
+}
+.bits-prose strong,
+.bits-prose b {
+  font-weight: 700;
+  color: theme("colors.brand.charcoal");
+}
+.bits-prose .ProseMirror,
+.bits-prose.ProseMirror {
+  outline: none;
+}
+/* Wrap long words / unbroken strings instead of pushing the layout wider */
+.ProseMirror {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.ProseMirror p,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror li,
+.ProseMirror blockquote {
+  overflow-wrap: break-word;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: theme("colors.brand.muted");
+  font-style: italic;
+}
+
+/* BITS-themed react-day-picker overrides */
+.rdp-bits {
+  --rdp-accent-color: #7cb342;
+  --rdp-accent-background-color: #dcedc8;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-height: 36px;
+  --rdp-weekday-padding: 8px 0;
+  --rdp-nav_button-width: 32px;
+  --rdp-nav_button-height: 32px;
+  --rdp-font-family: "Poppins", system-ui, sans-serif;
+  font-family: "Poppins", system-ui, sans-serif;
+  color: #1f2937;
+}
+.rdp-bits .rdp-month_caption {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+.rdp-bits .rdp-weekday {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rdp-bits .rdp-day {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.rdp-bits .rdp-day_button:hover:not([disabled]) {
+  background-color: #f3f4f6;
+}
+.rdp-bits .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: #558b2f;
+  font-weight: 700;
+}
+.rdp-bits .rdp-selected .rdp-day_button {
+  background-color: #7cb342;
+  color: white;
+  font-weight: 600;
+}
+.rdp-bits .rdp-selected .rdp-day_button:hover {
+  background-color: #558b2f;
+}
+.rdp-bits .rdp-outside .rdp-day_button {
+  color: #d1d5db;
+}
+.rdp-bits .rdp-button_previous,
+.rdp-bits .rdp-button_next {
+  color: #1f2937;
+  border-radius: 8px;
+}
+.rdp-bits .rdp-button_previous:hover,
+.rdp-bits .rdp-button_next:hover {
+  background-color: #f3f4f6;
+}
