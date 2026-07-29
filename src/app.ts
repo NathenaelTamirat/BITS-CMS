@@ -3,20 +3,26 @@ import authRoutes from "./Routes/auth.js";
 import postRoutes from "./Routes/posts.js";
 import mediaRoutes from "./Routes/media.js";
 import adminRoutes from "./Routes/admins.js";
+import adminPostRoutes from "./Routes/admin-posts.js";
 import errorHandler from "./Middleware/errorHandler.js";
 import { createRateLimiter } from "./Middleware/rateLimit.js";
 import { env } from "./Utils/env.js";
 
 const app = express();
 
-//cors Headers Set
+// Trust exactly one proxy hop (our nginx)
+app.set("trust proxy", 1);
+
+//cors Headers Set — explicit allowlist, never reflect Origin with credentials
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
-  const allowedOrigin = env.corsOrigin === "*" ? requestOrigin ?? "*" : env.corsOrigin;
 
-  res.header("Access-Control-Allow-Origin", allowedOrigin);
-  res.header("Vary", "Origin");
-  res.header("Access-Control-Allow-Credentials", "true");
+  if (requestOrigin && env.corsOrigins.includes(requestOrigin)) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+
   res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
 
@@ -60,7 +66,11 @@ app.use("/api/posts", postRoutes);
 //Media Routes
 app.use("/api/media", mediaRoutes);
 
-//Admin Routes
+//Admin Post Routes — mount BEFORE the broader /api/admin catch-all
+//so Express matches the more-specific prefix first.
+app.use("/api/admin/posts", adminPostRoutes);
+
+//Admin Routes (account management only)
 app.use("/api/admin", adminRoutes);
 
 app.use(errorHandler);

@@ -89,6 +89,7 @@ CREATE TABLE refresh_token (
 CREATE INDEX idx_post_slug ON post(slug);
 CREATE INDEX idx_post_adminid ON post(adminid);
 CREATE INDEX idx_post_isdeleted ON post(isdeleted);
+CREATE INDEX idx_post_isdeleted_publisheddate ON post(isdeleted, publisheddate DESC);
 CREATE INDEX idx_readmore_postid ON readmore(postid);
 CREATE INDEX idx_readmore_media_readmoreid ON readmore_media(readmoreid);
 CREATE INDEX idx_refresh_token_adminid ON refresh_token(adminid);

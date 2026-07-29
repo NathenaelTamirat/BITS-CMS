@@ -40,8 +40,6 @@ function getNumber(name: string, fallback: number): number {
   return value;
 }
 
-const jwtFallbackSecret = process.env.JWT_SECRET;
-
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: getNumber("PORT", 3000),
@@ -50,9 +48,12 @@ export const env = {
   dbUser: getRequired("DB_USER"),
   dbPassword: (process.env.DB_PASSWORD ?? "").trim(),
   dbName: getRequired("DB_NAME"),
-  jwtAccessSecret: getRequired("JWT_ACCESS_SECRET", jwtFallbackSecret),
-  jwtRefreshSecret: getRequired("JWT_REFRESH_SECRET", jwtFallbackSecret),
-  corsOrigin: process.env.CORS_ORIGIN ?? "*",
+  jwtAccessSecret: getRequired("JWT_ACCESS_SECRET"),
+  jwtRefreshSecret: getRequired("JWT_REFRESH_SECRET"),
+  corsOrigins: (process.env.CORS_ORIGIN ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
   refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? "refreshToken",
   accessTokenTtlSeconds: 15 * 60,
   refreshTokenTtlSeconds: 7 * 24 * 60 * 60,

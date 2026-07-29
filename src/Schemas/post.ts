@@ -13,6 +13,7 @@ import {
 } from "./helpers.js";
 import { isNewsMediaType } from "../Utils/newsMedia.js";
 import { normalizeYouTubeInput } from "../Utils/youtube.js";
+import { sanitizeHtml } from "../Utils/sanitizeHtml.js";
 import type { FieldError } from "../Utils/errors.js";
 
 function parseMediaInput(input: unknown, field: string, errors: FieldError[]): MediaInput | null {
@@ -169,11 +170,13 @@ export function parsePostBody(input: unknown): UpdatePostInput {
 
   return {
     title,
-    content,
+    content: sanitizeHtml(content),
     slug,
     publishedDate,
     primaryMedia: primaryMedia as MediaInput,
     readMoreEnabled,
-    readMore,
+    readMore: readMore
+      ? { ...readMore, content: sanitizeHtml(readMore.content) }
+      : undefined,
   };
 }

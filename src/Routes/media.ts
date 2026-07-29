@@ -28,12 +28,20 @@ const allowedMimeTypes = new Set([
   "application/pdf",
 ]);
 
+// SVGs can carry <script> — reject them until an SVG sanitizer is added
+const BANNED_MIME_TYPES = new Set(["image/svg+xml"]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
   fileFilter: (_req, file, callback) => {
+    if (BANNED_MIME_TYPES.has(file.mimetype)) {
+      callback(badRequest("SVG uploads are not allowed"));
+      return;
+    }
+
     if (allowedMimeTypes.has(file.mimetype)) {
       callback(null, true);
       return;
@@ -86,6 +94,7 @@ router.get(
 
     const total = media.fileData.length;
     res.set("Content-Type", media.mimeType);
+    res.set("X-Content-Type-Options", "nosniff");
     res.set("Cache-Control", "public, max-age=86400");
     res.set("Accept-Ranges", "bytes");
 
