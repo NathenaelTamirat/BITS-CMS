@@ -16,6 +16,7 @@ import { authenticate } from "../Middleware/auth.js";
 import { insertMedia, getMediaById } from "../DB/media.js";
 import { asyncHandler } from "../Utils/asyncHandler.js";
 import { badRequest, notFound } from "../Utils/errors.js";
+import { detectMimeType } from "../Utils/fileSignature.js";
 
 const router = Router();
 
@@ -60,8 +61,20 @@ router.post(
       throw badRequest("No file provided");
     }
 
+    // Trust the declared mimetype only to pass multer's filter; verify the
+    // actual bytes before anything is stored.
+    const detectedMimeType = detectMimeType(req.file.buffer);
+
+    if (!detectedMimeType) {
+      throw badRequest("File contents do not match a supported file type");
+    }
+
+    if (detectedMimeType !== req.file.mimetype) {
+      throw badRequest("File contents do not match the declared file type");
+    }
+
     const uploaded = await insertMedia({
-      mimeType: req.file.mimetype,
+      mimeType: detectedMimeType,
       fileData: req.file.buffer,
       uploadedBy: req.user?.sub ?? null,
     });

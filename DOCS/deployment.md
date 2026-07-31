@@ -173,66 +173,24 @@ cd /opt/bits-cms
 git clone <your-repo-url> .
 ```
 
-### 4.2 ⚠️ Understand what actually gets deployed — the Studio SPA gap
-Before you deploy, you need to know this: the `Dockerfile` at the repository root **only builds the Express API** (the `src/` directory → `dist/`). It does **not** build or include the `Client/` folder — the React/Vite Studio admin app — at all. I confirmed this by reading the `Dockerfile` line by line; there's no `COPY Client`, no Vite build stage, nothing.
+### 4.2 How the Studio SPA gets deployed
 
-Meanwhile, `nginx/conf.d/cms.conf` sets up a full HTTPS server block for `studio.bitscollege.edu.et`, but its `location /` just proxies to `http://cms-api:3000` — the same Express API. The Express app (`src/app.ts`) only defines JSON API routes under `/api/*`; it has no route that serves the Studio's HTML/JS/CSS. **The practical result: visiting `https://studio.bitscollege.edu.et/` today would hit the Express server and get a 404, not the admin UI.** The project's own `QUICKSTART.md` only documents accessing Studio via `localhost:5173` — the Vite *development* server — with no equivalent production build/serve step written anywhere.
+The Express API and the Studio SPA are two separate artifacts, deployed as follows:
 
-**This deployment guide includes the fix**, since it's needed to actually deploy a working system — do the following (this is a real deployment task, not optional if you want Studio to work in production):
+1. **The API** is built by the root `Dockerfile` (`src/` → `dist/`) and runs as the `cms-api` container.
+2. **The Studio SPA** (`Client/`) is built with Vite into a static folder (`Client/dist`) that nginx serves directly. The deployment wiring for this is **already in the repository**:
+   - `docker-compose.yml` bind-mounts `./Client/dist` into the nginx container at `/usr/share/nginx/html/studio` (read-only).
+   - `nginx/conf.d/cms.conf`'s `studio.bitscollege.edu.et` server block uses that folder as its `root`, serves `index.html`, falls back to `/index.html` for SPA routes (`try_files $uri $uri/ /index.html` — React Router needs this), and only proxies `/api/` to the `cms-api` container.
 
-1. **Add a Studio build stage to the Dockerfile**, or build it as a separate small Docker image. The simplest approach — extend the existing `cms-api` image build to also produce a static Studio bundle nginx can serve directly:
-   ```dockerfile
-   # Add this stage to the CMS Dockerfile
-   FROM node:20-alpine AS studio-builder
-   WORKDIR /app/Client
-   COPY Client/package.json Client/package-lock.json* ./
-   RUN npm ci
-   COPY Client ./
-   ENV VITE_API_URL=https://api.bitscollege.edu.et
-   RUN npm run build
-   ```
-   Then copy `Client/dist` out to a location nginx can mount as a static file directory (e.g. a named Docker volume shared between a build step and the nginx container, or simplest: build it once on the server directly and point nginx at the resulting folder — see step below).
+**The one manual step remaining is building `Client/dist` before first deploy** (and after any Studio code change), since the Studio build is intentionally not part of the API image:
 
-2. **Simplest practical option for now** (build Studio directly on the server, outside Docker, since it's a static site with no runtime):
-   ```bash
-   cd /opt/bits-cms/Client
-   npm ci
-   VITE_API_URL=https://api.bitscollege.edu.et npm run build
-   ```
-   This produces `Client/dist/` — a folder of static HTML/CSS/JS.
+```bash
+cd /opt/bits-cms/Client
+npm ci
+VITE_API_URL=https://api.bitscollege.edu.et npm run build
+```
 
-3. **Update `nginx/conf.d/cms.conf`'s studio server block** to serve that folder instead of proxying to the API:
-   ```nginx
-   server {
-       listen 443 ssl http2;
-       server_name studio.bitscollege.edu.et;
-       # ...ssl_certificate lines unchanged...
-
-       root /opt/bits-cms/Client/dist;
-       index index.html;
-
-       location /api/ {
-           proxy_pass http://cms-api:3000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-       }
-
-       location / {
-           try_files $uri /index.html;   # SPA routing — React Router needs this
-       }
-   }
-   ```
-   And add a bind mount for that path in the `nginx` service in `docker-compose.yml`:
-   ```yaml
-   volumes:
-     # ...existing volumes...
-     - ./Client/dist:/opt/bits-cms/Client/dist:ro
-   ```
-   You'll need to rebuild `Client/dist` and it'll be picked up on nginx's next request (static files, no restart needed) — but re-run `docker compose restart nginx` if you change the nginx config itself.
-
-I'm flagging this prominently because it's the kind of gap that's easy to miss until an editor tries to log in on the real domain and gets a confusing 404 instead of a login page.
+This produces `Client/dist/` — a folder of static HTML/CSS/JS. nginx picks it up on the next request (static files, no restart needed); re-run `docker compose restart nginx` only if you change the nginx config itself. If `Client/dist` is missing, `https://studio.bitscollege.edu.et/` serves an empty directory (403) instead of the login page — so build it before first boot.
 
 ### 4.3 Create the environment file
 ```bash

@@ -64,6 +64,7 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/www:/var/www/certbot:ro
       - ./certbot/conf:/etc/letsencrypt:ro
+      - ./Client/dist:/usr/share/nginx/html/studio:ro
     networks:
       - cms_net
     depends_on:

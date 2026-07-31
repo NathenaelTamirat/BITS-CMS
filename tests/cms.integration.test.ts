@@ -573,3 +573,42 @@ test("9. extended content and security: gallery limit, RBAC, rate limiting, and 
   assert.equal(corsResponse.status, 204);
   assert.equal(corsResponse.headers.get("access-control-allow-origin"), "http://localhost:5173");
 });
+
+test("10. file signature validation: contents must match the declared type", async () => {
+  const { accessToken } = await harness.loginAsSuperadmin();
+
+  const mismatchedUpload = await harness.upload(accessToken, {
+    name: "sneaky.png",
+    mimeType: "image/png",
+    content: harness.samplePdfContent(),
+  });
+  assert.equal(mismatchedUpload.status, 400);
+
+  const garbageUpload = await harness.upload(accessToken, {
+    name: "garbage.png",
+    mimeType: "image/png",
+    content: new Uint8Array([1, 2, 3, 4]),
+  });
+  assert.equal(garbageUpload.status, 400);
+
+  const validJpegUpload = await harness.upload(accessToken, {
+    name: "photo.jpg",
+    mimeType: "image/jpeg",
+    content: Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      Buffer.from("fake-jpeg-bits"),
+    ]),
+  });
+  assert.equal(validJpegUpload.status, 201);
+  const validJpeg = await harness.json<{ data: { mediaId: number; mimeType: string } }>(
+    validJpegUpload,
+  );
+  assert.equal(validJpeg.data.mimeType, "image/jpeg");
+
+  const detectedUpload = await harness.upload(accessToken, {
+    name: "fake.pdf",
+    mimeType: "application/pdf",
+    content: harness.sampleImageContent(),
+  });
+  assert.equal(detectedUpload.status, 400);
+});

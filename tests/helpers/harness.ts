@@ -231,11 +231,17 @@ export class CmsTestHarness {
   }
 
   sampleImageContent(): Uint8Array {
-    return Buffer.from("fake-image-bits");
+    return Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from("fake-png-bits"),
+    ]);
   }
 
   sampleVideoContent(): Uint8Array {
-    return Buffer.from("fake-video-bits");
+    return Buffer.concat([
+      Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]),
+      Buffer.from("fake-mp4-bits"),
+    ]);
   }
 
   samplePdfContent(): Uint8Array {
