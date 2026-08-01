@@ -1,6 +1,6 @@
 # BITS College CMS — Deployment Documentation
 
-*Project B. This document is self-contained. Every claim in here was checked against the actual source code — including two real gaps in the current setup that I'm flagging explicitly rather than glossing over, per your instructions.*
+*Project B. This document is self-contained. Every claim in here was checked against the actual source code.*
 
 ---
 
@@ -33,7 +33,7 @@ This is the **News & Events content management system** for BITS College — an 
                never exposed to the internet)
 ```
 
-Both public subdomains currently proxy to the **same** `cms-api` container — see the ⚠️ gap called out in Section 4 about what this means for the Studio UI specifically.
+Both public subdomains are served by the **same** nginx container: `api.` reverse-proxies everything to the `cms-api` container, while `studio.` serves the static Studio SPA and proxies only its `/api/` paths to `cms-api` (see Section 4.2).
 
 ### How the pieces communicate
 
@@ -76,14 +76,14 @@ Disk sizing matters more here than on the homepage server: **all uploaded media 
 ### Required dependencies (from `package.json`)
 Runtime: `express` 5.x, `pg` (Postgres driver), `bcrypt` (password hashing), `multer` (file upload handling), `dompurify` + `jsdom` (server-side HTML sanitization — `jsdom` provides a fake browser DOM so DOMPurify, normally a browser library, can run in Node), `dotenv`.
 
-**⚠️ Worth knowing before you build:** `bcrypt` is a **native module** — it compiles C++ code during `npm install`, not pure JavaScript. The current `Dockerfile` runs `npm ci` on `node:20-alpine` without first installing build tools (`python3`, `make`, `g++`). Alpine images often lack these by default. In practice `bcrypt` ships prebuilt binaries for common platforms and this frequently works fine on Alpine without extra steps — but if your build fails specifically during `npm ci` with errors mentioning `node-gyp`, `python`, or `make`, this is why. See the Troubleshooting section for the fix.
+**Worth knowing about the build:** `bcrypt` is a **native module** — it compiles C++ code during `npm install`, not pure JavaScript. The `Dockerfile` already handles this: both the `deps` and `builder` stages run `apk add --no-cache python3 make g++` before their `npm ci`, so the C++ toolchain is present even though Alpine's minimal base image doesn't include it by default. In practice `bcrypt` also ships prebuilt binaries for common platforms, so the build tools are belt-and-suspenders — but they're there whenever a build needs to compile from source. If a build still fails during `npm ci` with errors mentioning `node-gyp`, `python`, or `make`, see the Troubleshooting section.
 
 ### Required external services
 None beyond what you're deploying yourself — no third-party APIs, no external storage buckets (media lives in Postgres), no email service currently wired up. This is a self-contained system.
 
 ### Required environment variables
 
-I'm listing every one of these because, as covered below, **the `.env.example` file the documentation references doesn't actually exist in this repository** — you can't just copy a template, you need this table.
+The repository ships a committed `.env.example` at the root that you can copy as a starting point (`cp .env.example .env`), then replace the placeholder values with real secrets. The table below documents every variable so you know exactly what each one does — including the ones the template deliberately leaves out (`SEED_SUPERADMIN_*`, used only at seed time).
 
 | Variable | Required? | Purpose |
 |---|---|---|
@@ -106,7 +106,7 @@ openssl rand -base64 48
 ```
 Run this twice — once for each JWT secret — and never reuse the output.
 
-**⚠️ Gap I found and want to flag directly, per your instructions:** `DOCS/DEPLOY.md` in this repo instructs you to run `cp .env.example .env`, and `.gitignore` even has a `!.env.example` line meaning that file is *supposed* to be tracked in git — but I checked the actual repository contents you gave me and **no `.env.example` file exists anywhere**, not at the root and not in `Client/`. This looks like a step that was planned and documented but never actually committed. You cannot copy a file that isn't there — use the table above instead, and consider creating that file yourself (with placeholder values, no real secrets) so future deploys don't hit the same wall.
+**Tip:** the committed `.env.example` at the repo root is the fastest starting point — copy it and replace every `changeme_` placeholder with real secrets (Section 4.3 shows a full `.env`). It intentionally does **not** include the one-time `SEED_SUPERADMIN_*` variables; pass those per-command at seed time (Section 4.7) instead of storing them long-term in `.env`.
 
 ---
 
@@ -298,7 +298,7 @@ docker compose ps
 `cms_postgres`, `cms_api`, `cms_nginx` should all show `Up`/`healthy`. `cms_certbot` will just show `Up` (no healthcheck defined for it — that's normal, it's a loop process, not a request-serving service).
 
 ### Test frontend functionality (Studio)
-Once Section 4.2's fix is in place: open `https://studio.bitscollege.edu.et` in a browser, confirm the login page loads (not a 404), log in with the superadmin credentials from Section 4.8, confirm you land on `/studio/posts`.
+Once the Studio build from Section 4.2 has been produced (`Client/dist` exists), open `https://studio.bitscollege.edu.et` in a browser, confirm the login page loads (not a 404), log in with the superadmin credentials from Section 4.8, confirm you land on `/studio/posts`.
 
 ### Test backend APIs
 ```bash
@@ -338,7 +338,7 @@ curl -i -X POST https://api.bitscollege.edu.et/api/auth/login \
 Expect `401`, not `500` — a `500` here would indicate a bug, not just a wrong password.
 
 ### Test file uploads
-Through the Studio UI (once Section 4.2 is resolved): create a post, upload an image, confirm it appears. Via `curl`, you'd need a valid access token first (from the login call above), then:
+Through the Studio UI (once it's deployed per Section 4.2): create a post, upload an image, confirm it appears. Via `curl`, you'd need a valid access token first (from the login call above), then:
 ```bash
 curl -i -X POST https://api.bitscollege.edu.et/api/media/upload \
   -H "Authorization: Bearer <access-token-from-login>" \
@@ -371,16 +371,8 @@ docker stats --no-stream                                # resource usage
 ### Build failures
 
 **Symptom:** `docker compose build` fails during `npm ci` for `cms-api`, with errors mentioning `node-gyp`, `python3 not found`, or `make: not found`.
-**Cause:** `bcrypt` is a native module and Alpine's minimal base image doesn't include C++ build tools by default. Whether you hit this depends on whether `bcrypt`'s prebuilt binary matches your exact platform.
-**Solution:** add build tools to the `deps`/`builder` stage in the `Dockerfile`:
-```dockerfile
-FROM node:20-alpine AS deps
-WORKDIR /app
-RUN apk add --no-cache python3 make g++
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-```
-(add the same `apk add` line to the `builder` stage too, since it also runs `npm ci`). Alternative: swap `bcrypt` for `bcryptjs` (pure JavaScript, no native compilation, slightly slower but zero build-tool dependency) if you'd rather avoid this class of issue entirely — that would require a small code change in `adminseed.ts` and wherever else `bcrypt` is imported.
+**Cause:** `bcrypt` is a native module, and Alpine's minimal base image doesn't include C++ build tools by default. The `Dockerfile` already installs them — `RUN apk add --no-cache python3 make g++` before each `npm ci`, in both the `deps` and `builder` stages — so this should not happen with the current code. If it does, either those lines were removed, or `bcrypt`'s prebuilt binary doesn't match your exact platform and it's falling back to a source build.
+**Solution:** confirm both `apk add --no-cache python3 make g++` lines (in the `deps` and `builder` stages, immediately before each `npm ci`) are present in the `Dockerfile`, restore them if missing, and rebuild. If you'd rather eliminate native compilation entirely, swap `bcrypt` for `bcryptjs` (pure JavaScript, slightly slower but zero build-tool dependency) — that requires a small code change in `adminseed.ts` and wherever else `bcrypt` is imported.
 
 ### Missing environment variables
 **Symptom:** container exits immediately on startup with `Error: Missing environment variable: JWT_ACCESS_SECRET` (or similar).
